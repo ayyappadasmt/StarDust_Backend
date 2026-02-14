@@ -14,13 +14,12 @@ from langchain_core.tools import tool
 
 load_dotenv()
 
-# ------------------ MEMORY ------------------
+
 memory = MemorySaver()
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 
-# ------------------ TOOLS ------------------
 
 search_tool = TavilySearchResults(max_results=4)
 
@@ -46,16 +45,15 @@ def leetcode_ai_coach(problem: str, language: str = "python") -> str:
 tools = [search_tool, leetcode_ai_coach]
 
 
-# ------------------ GEMINI MODEL ------------------
 llm = ChatGoogleGenerativeAI(
-    model="models/gemini-2.5-flash",  # Use the EXACT name from the list
+    model="models/gemini-2.5-flash",  
     temperature=0.7,
     streaming=True
 )
 
 llm_with_tools = llm.bind_tools(tools=tools)
 
-# ------------------ GRAPH NODES ------------------
+
 async def model_node(state: State):
     result = await llm_with_tools.ainvoke(state["messages"])
     return {"messages": [result]}
@@ -85,7 +83,7 @@ async def tool_node(state: State):
     return {"messages": tool_messages}
 
 
-# ------------------ GRAPH ------------------
+
 graph = StateGraph(State)
 graph.add_node("model", model_node)
 graph.add_node("tool_node", tool_node)
@@ -94,7 +92,6 @@ graph.add_conditional_edges("model", tools_router)
 graph.add_edge("tool_node", "model")
 graph = graph.compile(checkpointer=memory)
 
-# ------------------ FASTAPI ------------------
 app = FastAPI()
 
 app.add_middleware(
